@@ -20,12 +20,30 @@ using namespace std;
 
 using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
 
+nostd::shared_ptr<metrics_api::MeterProvider> provider;
+nostd::shared_ptr<metrics_api::Meter> meter;
+nostd::unique_ptr<metrics_api::Counter<double>> counter;
+const std::vector<std::pair<std::string, std::string>> labels = {
+            {"path", "/info"},
+            {"method", "GET"}};
+
+void initCounter() {
+    provider = metrics_api::Provider::GetMeterProvider();
+    meter = provider->GetMeter("http_rescource");
+    counter = meter->CreateDoubleCounter("http_server_request_count", OPENTELEMETRY_SDK_VERSION);
+}
+
+void incrementCounter() {
+    counter->Add(1.0, labels);
+}
+
 int main()
 {
     std::cout << "starting .....";
     std::string metricsName{"starstream_prometheus"};
     std::string metricsPath{"0.0.0.0:8081"};
     telemetry::initMetrics(metricsName, metricsPath);
+    initCounter();
 
     // HTTP-server at port 8080 using 1 thread
     // Unless you do more heavy non-threaded processing in the resources,
@@ -33,26 +51,11 @@ int main()
     HttpServer server;
     server.config.port = 8080;
 
-    auto provider = metrics_api::Provider::GetMeterProvider();
-    auto meter = provider->GetMeter("main_loop");
-    auto counter = meter->CreateDoubleCounter("one_counter", OPENTELEMETRY_SDK_VERSION);
-    const std::vector<std::pair<std::string, std::string>> labels = {
-        {"key1", "value1"},
-    };
-    counter->Add(1.0, labels);
-
     //  GET-example for the path /info
     // Responds with request-information
     server.resource["^/info$"]["GET"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
     {
-        auto provider = metrics_api::Provider::GetMeterProvider();
-        auto meter = provider->GetMeter("http_rescource");
-        auto counter = meter->CreateDoubleCounter("http_server_request_count", OPENTELEMETRY_SDK_VERSION);
-        const std::vector<std::pair<std::string, std::string>> labels = {
-            {"path", "/info"},
-            {"method", "GET"}};
-        counter->Add(1.0, labels);
-
+       incrementCounter();
         stringstream stream;
         stream << "<h1>Request from " << request->remote_endpoint().address().to_string() << ":" << request->remote_endpoint().port() << "</h1>";
 
