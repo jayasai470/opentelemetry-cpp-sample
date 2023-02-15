@@ -29,5 +29,31 @@ find_package(Threads REQUIRED)
 find_package(opentelemetry-cpp CONFIG REQUIRED)
 find_package(prometheus-cpp CONFIG REQUIRED)
 
+find_package(Protobuf)
+find_package(gRPC)
+
 target_link_libraries(otel-cpp-sample PRIVATE ${CMAKE_THREAD_LIBS_INIT})
-target_link_libraries(otel-cpp-sample opentelemetry-cpp::api opentelemetry-cpp::sdk opentelemetry-cpp::trace opentelemetry-cpp::ostream_span_exporter opentelemetry_metrics opentelemetry_exporter_prometheus opentelemetry_resources prometheus-cpp::pull prometheus-cpp::core)
+
+target_link_libraries(otel-cpp-sample protobuf::libprotobuf
+opentelemetry_trace 
+opentelemetry_common 
+opentelemetry_exporter_otlp_grpc
+opentelemetry_exporter_otlp_grpc_log
+opentelemetry_exporter_otlp_grpc_client 
+opentelemetry_proto 
+opentelemetry_otlp_recordable 
+opentelemetry_resources 
+gRPC::grpc++
+opentelemetry-cpp::api
+opentelemetry-cpp::sdk
+opentelemetry-cpp::trace
+opentelemetry-cpp::logs
+opentelemetry-cpp::ostream_span_exporter
+opentelemetry-cpp::ostream_log_record_exporter
+opentelemetry_metrics
+opentelemetry_trace
+opentelemetry_exporter_prometheus
+opentelemetry_logs
+prometheus-cpp::pull
+prometheus-cpp::core
+)

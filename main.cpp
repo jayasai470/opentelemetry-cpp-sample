@@ -7,7 +7,6 @@
 
 #include "telemetry.h"
 
-#include "opentelemetry/logs/provider.h"
 #include "opentelemetry/sdk/version/version.h"
 #include "opentelemetry/metrics/provider.h"
 
@@ -20,30 +19,15 @@ using namespace std;
 
 using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
 
-nostd::shared_ptr<metrics_api::MeterProvider> provider;
-nostd::shared_ptr<metrics_api::Meter> meter;
-nostd::unique_ptr<metrics_api::Counter<double>> counter;
-const std::vector<std::pair<std::string, std::string>> labels = {
-            {"path", "/info"},
-            {"method", "GET"}};
-
-void initCounter() {
-    provider = metrics_api::Provider::GetMeterProvider();
-    meter = provider->GetMeter("http_rescource");
-    counter = meter->CreateDoubleCounter("http_server_request_count", OPENTELEMETRY_SDK_VERSION);
-}
-
-void incrementCounter() {
-    counter->Add(1.0, labels);
-}
 
 int main()
 {
     std::cout << "starting .....";
-    std::string metricsName{"starstream_prometheus"};
+    std::string metricsName{"metrics_prometheus"};
     std::string metricsPath{"0.0.0.0:8081"};
     telemetry::initMetrics(metricsName, metricsPath);
-    initCounter();
+    telemetry::initLogger();
+    telemetry::initTracer();
 
     // HTTP-server at port 8080 using 1 thread
     // Unless you do more heavy non-threaded processing in the resources,
@@ -55,7 +39,17 @@ int main()
     // Responds with request-information
     server.resource["^/info$"]["GET"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
     {
-       incrementCounter();
+       auto counter = telemetry::getOrCreateCounter("http.server.request.count", "Total number of HTTP requests", "requests");
+        counter->Add(1, {{"path", request->path},{"method", request->method}});
+
+        auto span        = telemetry::getTracer()->StartSpan("health check span");
+        auto ctx         = span->GetContext();
+  
+        auto logger = telemetry::getLogger();
+        logger->EmitLogRecord(opentelemetry::logs::Severity::kDebug, "opentelemetry ...", ctx.trace_id(),
+                        ctx.span_id(), ctx.trace_flags(),
+                        opentelemetry::common::SystemTimestamp(std::chrono::system_clock::now()));
+
         stringstream stream;
         stream << "<h1>Request from " << request->remote_endpoint().address().to_string() << ":" << request->remote_endpoint().port() << "</h1>";
 
