@@ -18,7 +18,7 @@ include_directories(
 
 list(APPEND ${Boost_LIBRARIES})
 
-add_executable(otel-cpp-sample main.cpp telemetry.cpp telemetry.h)
+add_executable(otel-cpp-sample main.cpp telemetry.cpp telemetry.h xray_id_generator.h xray_id_generator.cpp)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

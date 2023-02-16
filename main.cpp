@@ -41,7 +41,7 @@ int main()
     {
        auto counter = telemetry::getOrCreateCounter("http.server.request.count", "Total number of HTTP requests", "requests");
         counter->Add(1, {{"path", request->path},{"method", request->method}});
-
+        
         auto span        = telemetry::getTracer()->StartSpan("health check span");
         auto ctx         = span->GetContext();
   
@@ -49,6 +49,12 @@ int main()
         logger->EmitLogRecord(opentelemetry::logs::Severity::kDebug, "opentelemetry ...", ctx.trace_id(),
                         ctx.span_id(), ctx.trace_flags(),
                         opentelemetry::common::SystemTimestamp(std::chrono::system_clock::now()));
+        sleep(2);
+        // nested span
+        opentelemetry::trace::StartSpanOptions spanOptions;
+        spanOptions.parent = ctx;
+        auto nested_span = telemetry::getTracer()->StartSpan("after logs", spanOptions);
+        sleep(3);
 
         stringstream stream;
         stream << "<h1>Request from " << request->remote_endpoint().address().to_string() << ":" << request->remote_endpoint().port() << "</h1>";
@@ -65,6 +71,7 @@ int main()
             stream << field.first << ": " << field.second << "<br>";
 
         response->write(stream);
+        nested_span.get()->End();
     };
 
     server.on_error = [](shared_ptr<HttpServer::Request> /*request*/, const SimpleWeb::error_code & /*ec*/)
