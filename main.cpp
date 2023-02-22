@@ -1,9 +1,7 @@
 #include <iostream>
 #include <future>
 
-#ifdef HAVE_OPENSSL
-#include "crypto.hpp"
-#endif
+
 
 #include "telemetry.h"
 
@@ -13,11 +11,11 @@
 namespace nostd = opentelemetry::nostd;
 namespace metrics_api = opentelemetry::metrics;
 
-#include <Simple-Web-Server/server_http.hpp>
+#include <Simple-Web-Server/server_https.hpp>
 
 using namespace std;
 
-using HttpServer = SimpleWeb::Server<SimpleWeb::HTTP>;
+using HttpsServer = SimpleWeb::Server<SimpleWeb::HTTPS>;
 
 
 int main()
@@ -32,29 +30,40 @@ int main()
     // HTTP-server at port 8080 using 1 thread
     // Unless you do more heavy non-threaded processing in the resources,
     // 1 thread is usually faster than several threads
-    HttpServer server;
+
+    HttpsServer server ("cacert.pem", "cakey.pem");
     server.config.port = 8080;
 
     //  GET-example for the path /info
     // Responds with request-information
-    server.resource["^/info$"]["GET"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request)
+    server.resource["^/info$"]["GET"] = [](shared_ptr<HttpsServer::Response> response, shared_ptr<HttpsServer::Request> request)
     {
        auto counter = telemetry::getOrCreateCounter("http.server.request.count", "Total number of HTTP requests", "requests");
         counter->Add(1, {{"path", request->path},{"method", request->method}});
         
         auto span        = telemetry::getTracer()->StartSpan("health check span");
         auto ctx         = span->GetContext();
-  
+
+        // for xray trace id format
+        auto traceId = ctx.trace_id().Id();
+        std::ostringstream xrayTraceIdFormatStream;
+        std::string xraystring;
+        for (int i=0; i< ctx.trace_id().kSize; i++) {
+            xrayTraceIdFormatStream << (int)traceId[i];
+        }
+        //
+        xraystring = xrayTraceIdFormatStream.str();
+
         auto logger = telemetry::getLogger();
         logger->EmitLogRecord(opentelemetry::logs::Severity::kDebug, "opentelemetry ...", ctx.trace_id(),
                         ctx.span_id(), ctx.trace_flags(),
                         opentelemetry::common::SystemTimestamp(std::chrono::system_clock::now()));
-        sleep(2);
+        sleep(1);
         // nested span
         opentelemetry::trace::StartSpanOptions spanOptions;
         spanOptions.parent = ctx;
         auto nested_span = telemetry::getTracer()->StartSpan("after logs", spanOptions);
-        sleep(3);
+        sleep(2);
 
         stringstream stream;
         stream << "<h1>Request from " << request->remote_endpoint().address().to_string() << ":" << request->remote_endpoint().port() << "</h1>";
@@ -74,7 +83,7 @@ int main()
         nested_span.get()->End();
     };
 
-    server.on_error = [](shared_ptr<HttpServer::Request> /*request*/, const SimpleWeb::error_code & /*ec*/)
+    server.on_error = [](shared_ptr<HttpsServer::Request> /*request*/, const SimpleWeb::error_code & /*ec*/)
     {
         // Handle errors here
         // Note that connection timeouts will also call this handle with ec set to SimpleWeb::errc::operation_canceled

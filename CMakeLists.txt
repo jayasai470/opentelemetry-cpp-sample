@@ -8,8 +8,7 @@ enable_testing()
 
 add_subdirectory(third-party/Simple-Web-Server)
 
-set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost COMPONENTS log filesystem REQUIRED)
+find_package(Boost COMPONENTS log filesystem system thread REQUIRED)
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -24,6 +23,7 @@ set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
+find_package(OpenSSL)
 find_package(Threads REQUIRED)
 
 find_package(opentelemetry-cpp CONFIG REQUIRED)
@@ -31,6 +31,13 @@ find_package(prometheus-cpp CONFIG REQUIRED)
 
 find_package(Protobuf)
 find_package(gRPC)
+
+target_link_libraries(otel-cpp-sample ${OPENSSL_LIBRARIES})
+target_include_directories(otel-cpp-sample INTERFACE ${OPENSSL_INCLUDE_DIR})
+
+target_link_libraries(otel-cpp-sample ${Boost_LIBRARIES})
+target_include_directories(otel-cpp-sample INTERFACE ${Boost_INCLUDE_DIR})
+
 
 target_link_libraries(otel-cpp-sample PRIVATE ${CMAKE_THREAD_LIBS_INIT})
 
