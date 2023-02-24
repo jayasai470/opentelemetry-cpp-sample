@@ -5,9 +5,9 @@
 
 #include "telemetry.h"
 
-#include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
-#include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
-#include "opentelemetry/exporters/otlp/otlp_grpc_log_record_exporter_factory.h"
+// #include "opentelemetry/exporters/otlp/otlp_grpc_exporter.h"
+// #include "opentelemetry/exporters/otlp/otlp_grpc_exporter_factory.h"
+// #include "opentelemetry/exporters/otlp/otlp_grpc_log_record_exporter_factory.h"
 
 #include "opentelemetry/exporters/prometheus/exporter.h"
 #include "opentelemetry/metrics/provider.h"
@@ -43,7 +43,7 @@ namespace trace_api = opentelemetry::trace;
 namespace trace_sdk = opentelemetry::sdk::trace;
 namespace trace_exporter = opentelemetry::exporter::trace;
 
-namespace otlp = opentelemetry::exporter::otlp;
+// namespace otlp = opentelemetry::exporter::otlp;
 
 nostd::shared_ptr<metrics_api::MeterProvider> provider;
 nostd::shared_ptr<metrics_api::Meter> meter;
@@ -117,14 +117,14 @@ nostd::shared_ptr<metrics_api::Counter<uint64_t>> telemetry::getOrCreateCounter(
 void telemetry::initLogger()
 {
   // otlp grpc logger
-  opentelemetry::exporter::otlp::OtlpGrpcExporterOptions otlpOpts;
-  auto exporter = otlp::OtlpGrpcLogRecordExporterFactory::Create(otlpOpts);
+  // opentelemetry::exporter::otlp::OtlpGrpcExporterOptions otlpOpts;
+  // auto exporter = otlp::OtlpGrpcLogRecordExporterFactory::Create(otlpOpts);
 
-  auto sdkProvider = std::shared_ptr<sdk_logs::LoggerProvider>(new sdk_logs::LoggerProvider());
-  sdkProvider->AddProcessor(std::unique_ptr<sdk_logs::LogRecordProcessor>(new sdk_logs::SimpleLogRecordProcessor(std::move(exporter))));
-  auto apiProvider = nostd::shared_ptr<logs::LoggerProvider>(sdkProvider);
-  auto provider = nostd::shared_ptr<logs::LoggerProvider>(apiProvider);
-  logs::Provider::SetLoggerProvider(provider);
+  // auto sdkProvider = std::shared_ptr<sdk_logs::LoggerProvider>(new sdk_logs::LoggerProvider());
+  // sdkProvider->AddProcessor(std::unique_ptr<sdk_logs::LogRecordProcessor>(new sdk_logs::SimpleLogRecordProcessor(std::move(exporter))));
+  // auto apiProvider = nostd::shared_ptr<logs::LoggerProvider>(sdkProvider);
+  // auto provider = nostd::shared_ptr<logs::LoggerProvider>(apiProvider);
+  // logs::Provider::SetLoggerProvider(provider);
 }
 
 nostd::shared_ptr<logs::Logger> telemetry::getLogger()
@@ -136,20 +136,20 @@ nostd::shared_ptr<logs::Logger> telemetry::getLogger()
 
 void telemetry::initTracer()
 {
-  opentelemetry::exporter::otlp::OtlpGrpcExporterOptions otlpOpts;
-  auto exporter = otlp::OtlpGrpcExporterFactory::Create(otlpOpts);
-  auto processor = trace_sdk::SimpleSpanProcessorFactory::Create(std::move(exporter));
+  // opentelemetry::exporter::otlp::OtlpGrpcExporterOptions otlpOpts;
+  // auto exporter = otlp::OtlpGrpcExporterFactory::Create(otlpOpts);
+  // auto processor = trace_sdk::SimpleSpanProcessorFactory::Create(std::move(exporter));
 
-  // TODO: create resources
-  auto resource = opentelemetry::sdk::resource::Resource::Create({{"service_name", "http service"}});
-  auto alwaysOnSampler = std::unique_ptr<trace_sdk::Sampler>(new opentelemetry::sdk::trace::AlwaysOnSampler());
-  auto xrayIdGenerator = std::unique_ptr<trace_sdk::IdGenerator>(new XrayIdGenerator());
+  // // TODO: create resources
+  // auto resource = opentelemetry::sdk::resource::Resource::Create({{"service_name", "http service"}});
+  // auto alwaysOnSampler = std::unique_ptr<trace_sdk::Sampler>(new opentelemetry::sdk::trace::AlwaysOnSampler());
+  // auto xrayIdGenerator = std::unique_ptr<trace_sdk::IdGenerator>(new XrayIdGenerator());
 
-  std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
-      trace_sdk::TracerProviderFactory::Create(std::move(processor), resource, std::move(alwaysOnSampler), std::move(xrayIdGenerator));
+  // std::shared_ptr<opentelemetry::trace::TracerProvider> provider =
+  //     trace_sdk::TracerProviderFactory::Create(std::move(processor), resource, std::move(alwaysOnSampler), std::move(xrayIdGenerator));
 
-  // Set the global trace provider
-  trace_api::Provider::SetTracerProvider(provider);
+  // // Set the global trace provider
+  // trace_api::Provider::SetTracerProvider(provider);
 }
 
 nostd::shared_ptr<trace_api::Tracer> telemetry::getTracer()

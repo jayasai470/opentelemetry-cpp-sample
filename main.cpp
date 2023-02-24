@@ -24,8 +24,8 @@ int main()
     std::string metricsName{"metrics_prometheus"};
     std::string metricsPath{"0.0.0.0:8081"};
     telemetry::initMetrics(metricsName, metricsPath);
-    telemetry::initLogger();
-    telemetry::initTracer();
+    // telemetry::initLogger();
+    // telemetry::initTracer();
 
     // HTTP-server at port 8080 using 1 thread
     // Unless you do more heavy non-threaded processing in the resources,
